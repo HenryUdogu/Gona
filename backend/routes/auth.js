@@ -14,6 +14,8 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    console.log('Register request received:', { name, email, password: '***' });
+
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required.' });
     }
@@ -29,10 +31,12 @@ router.post('/register', async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Send OTP email — wait for it to complete
-    await sendOTP(email, otp);
-
     res.status(201).json({ message: 'Account created. OTP sent to your email.' });
+
+    // Send email in background — don't block if it fails
+    sendOTP(email, otp).catch((emailErr) => {
+      console.error('Failed to send OTP email:', emailErr.message);
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -61,6 +65,8 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('Login request received:', { email, password: '***' });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
@@ -72,10 +78,12 @@ router.post('/login', async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Send OTP email — only once
-    await sendOTP(email, otp);
-
     res.json({ message: 'OTP sent to your email. Please verify to continue.' });
+
+    // Send OTP email in background — don't block if it fails
+    sendOTP(email, otp).catch((emailErr) => {
+      console.error('Failed to send OTP email for login:', emailErr.message);
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
