@@ -68,7 +68,7 @@ function RegisterForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setLoading(true); // ← NEW
+    setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
@@ -79,16 +79,15 @@ function RegisterForm() {
           password: formData.password,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setLoading(false); // ← NEW
-        return setError(data.message);
+        return setError(data.message || "Registration failed. Please try again.");
       }
-      setLoading(false); // ← NEW
       setOtpStep(true);
     } catch (err) {
-      setLoading(false); // ← NEW
       setError("Registration failed. Make sure the server is running.");
+    } finally {
+      setLoading(false);
     }
   }
 

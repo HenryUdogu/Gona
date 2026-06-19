@@ -14,6 +14,10 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
@@ -25,11 +29,12 @@ router.post('/register', async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Send OTP email
-    await sendOTP(email, otp);
-
-    // No token yet — wait for OTP verification
+    // Return response before waiting for email delivery
     res.status(201).json({ message: 'Account created. OTP sent to your email.' });
+
+    sendOTP(email, otp).catch((emailErr) => {
+      console.error('Failed to send OTP email:', emailErr);
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
