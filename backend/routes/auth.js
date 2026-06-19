@@ -29,12 +29,10 @@ router.post('/register', async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Return response before waiting for email delivery
-    res.status(201).json({ message: 'Account created. OTP sent to your email.' });
+    // Send OTP email — wait for it to complete
+    await sendOTP(email, otp);
 
-    sendOTP(email, otp).catch((emailErr) => {
-      console.error('Failed to send OTP email:', emailErr);
-    });
+    res.status(201).json({ message: 'Account created. OTP sent to your email.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
